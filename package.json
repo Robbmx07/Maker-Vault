@@ -1,0 +1,23 @@
+{
+  "name": "maker-vault",
+  "version": "0.1.0",
+  "description": "Local-first project vault for 3D printing, laser engraving and vinyl cutting: keep files, settings and results together so every project is reproducible.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Bert's CNC Woodworking",
+  "homepage": "https://robbmx07.github.io/Maker-Vault/",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --no-warnings server/index.js",
+    "dev": "node --no-warnings --watch server/index.js",
+    "test": "node --no-warnings --test \"test/*.test.js\"",
+    "build:sea": "node build/build-sea.mjs",
+    "build:html": "node build/build-html.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "postject": "^1.0.0-alpha.6"
+  }
+}

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maker Vault</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23e8590c'/%3E%3Cpath d='M8 12l8-4 8 4v8l-8 4-8-4z' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M8 12l8 4 8-4M16 16v8' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="logo" href="#/"><svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect width="32" height="32" rx="7" fill="var(--accent)"/><path d="M8 12l8-4 8 4v8l-8 4-8-4z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M8 12l8 4 8-4M16 16v8" stroke="#fff" stroke-width="2" fill="none"/></svg><span>Maker Vault</span></a>
+    <nav id="nav">
+      <a href="#/" data-route="projects">Projects</a>
+      <a href="#/materials" data-route="materials">Materials</a>
+      <a href="#/settings" data-route="settings">Settings</a>
+    </nav>
+  </header>
+  <main id="app" aria-live="polite"></main>
+  <footer id="footer"></footer>
+  <div id="toast" role="status"></div>
+  <div id="dropveil" hidden><div>Drop files to add them to your vault</div></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

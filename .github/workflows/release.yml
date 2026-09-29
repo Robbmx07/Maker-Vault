@@ -1,0 +1,63 @@
+# Builds the standalone (no-install) app for each operating system.
+# A single-file executable embeds the Node binary of the machine that built it,
+# so it cannot be cross-compiled: each OS builds its own.
+#
+# Run it manually from the Actions tab to get downloadable test builds, or push a
+# tag like v0.1.0 to also publish them on a GitHub Release.
+name: Build standalone apps
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest,  name: linux-x64 }
+          - { os: windows-latest, name: windows-x64 }
+          - { os: macos-latest,   name: macos-arm64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:sea
+      - name: Smoke test the built app
+        shell: bash
+        run: |
+          exe=$(ls dist/maker-vault-*)
+          VAULT_NO_OPEN=1 VAULT_DATA="$RUNNER_TEMP/vault-smoke" PORT=4999 "$exe" &
+          pid=$!
+          for i in $(seq 1 20); do curl -fs http://127.0.0.1:4999/api/config && break; sleep 1; done
+          curl -fs http://127.0.0.1:4999/ | grep -q "Maker Vault"
+          kill $pid || true
+      - name: Package (unix)
+        if: runner.os != 'Windows'
+        run: tar -czf "maker-vault-${{ matrix.name }}.tar.gz" -C dist .
+      - name: Package (windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path dist\* -DestinationPath "maker-vault-${{ matrix.name }}.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: maker-vault-${{ matrix.name }}
+          path: maker-vault-${{ matrix.name }}.*
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: out, merge-multiple: true }
+      - uses: softprops/action-gh-release@v2
+        with: { files: out/*, generate_release_notes: true }
