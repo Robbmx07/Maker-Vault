@@ -330,12 +330,13 @@ async function materialsView(app) {
     route();
   });
   put(app, 
-    h('h1', {}, 'Materials'), h('p', { class: 'sub' }, 'Spools, sheets and vinyl. Log grams on a run and the remaining amount updates itself.'),
-    h('section', { class: 'panel' }, h('div', { class: 'row' }, inp('name', 'Name (e.g. Blue PETG)'), inp('type', 'Type (PLA, birch ply…)'), inp('brand', 'Brand'), inp('color', 'Color'), inp('remaining_g', 'Remaining (g)', 'number', '130px'), inp('cost_per_kg', 'Cost / kg', 'number', '110px'), h('button', { class: 'primary', onclick: add }, 'Add'))),
-    materials.length ? h('section', { class: 'panel' }, h('table', {}, h('tr', {}, ['Name', 'Type', 'Brand', 'Color', 'Remaining (g)', 'Cost/kg', ''].map((t) => h('th', {}, t))),
+    h('h1', {}, 'Materials'), h('p', { class: 'sub' }, 'Spools, sheets and vinyl. Everything is in grams: log grams on a run and the remaining amount updates itself.'),
+    h('section', { class: 'panel' }, h('div', { class: 'row' }, inp('name', 'Name (e.g. Blue PETG)'), inp('type', 'Type (PLA, birch ply…)'), inp('brand', 'Brand'), inp('color', 'Color'), inp('remaining_g', 'Remaining (g)', 'number', '150px'), inp('cost_per_g', 'Cost per gram ($/g)', 'number', '150px'), h('button', { class: 'primary', onclick: add }, 'Add')),
+      h('p', { class: 'kv', style: { margin: '8px 0 0' } }, 'Weight is in grams and price is per gram. For example, a 1 kg spool that cost $22 is 1000 g at $0.022 per gram.')),
+    materials.length ? h('section', { class: 'panel' }, h('table', {}, h('tr', {}, ['Name', 'Type', 'Brand', 'Color', 'Remaining (g)', 'Cost per gram', ''].map((t) => h('th', {}, t))),
       materials.map((m) => h('tr', {}, h('td', {}, m.name), h('td', {}, m.type), h('td', {}, m.brand), h('td', {}, m.color),
         h('td', {}, h('input', { type: 'number', min: 0, step: 'any', value: m.remaining_g ?? '', style: { width: '110px' }, 'aria-label': `Remaining grams for ${m.name}`, onchange: guard(async (e) => { await api('PATCH', `/api/materials/${m.id}`, { remaining_g: e.target.value }); toast('Updated'); }) })),
-        h('td', {}, m.cost_per_kg != null ? `$${m.cost_per_kg}` : ''),
+        h('td', {}, m.cost_per_g != null ? `$${Number(Number(m.cost_per_g).toFixed(5))}/g` : ''),
         h('td', {}, h('button', { class: 'small danger', onclick: guard(async () => { if (confirm(`Delete ${m.name}?`)) { await api('DELETE', `/api/materials/${m.id}`); route(); } }) }, '×')))))) : null);
 }
 

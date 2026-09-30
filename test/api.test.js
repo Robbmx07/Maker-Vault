@@ -89,6 +89,28 @@ test('runs: default to recipe, deduct material, diff, refund on delete', async (
   assert.equal((await t.api('POST', `/api/projects/${pid}/runs`, { outcome: 'meh' })).status, 400);
 });
 
+test('materials are measured in grams: weight in g, price per gram, bad amounts rejected', async () => {
+  const { data: { id } } = await t.api('POST', '/api/materials', { name: 'Silk Gold PETG', type: 'PETG', remaining_g: 1000, cost_per_g: 0.025 });
+  const find = async () => (await t.api('GET', '/api/materials')).data.find((m) => m.id === id);
+  let m = await find();
+  assert.equal(m.remaining_g, 1000);
+  assert.equal(m.cost_per_g, 0.025);
+  assert.ok(!('cost_per_kg' in m), 'the per-kilogram field no longer exists');
+  // editing one amount keeps the other; an empty value clears it
+  await t.api('PATCH', `/api/materials/${id}`, { remaining_g: '640' });
+  m = await find();
+  assert.equal(m.remaining_g, 640);
+  assert.equal(m.cost_per_g, 0.025);
+  await t.api('PATCH', `/api/materials/${id}`, { cost_per_g: '' });
+  assert.equal((await find()).cost_per_g, null);
+  // invalid amounts are refused, not stored
+  for (const bad of [{ cost_per_g: -1 }, { cost_per_g: 'abc' }, { remaining_g: -5 }]) {
+    const r = await t.api('POST', '/api/materials', { name: 'Bad', ...bad });
+    assert.equal(r.status, 400, JSON.stringify(bad));
+  }
+  assert.equal((await t.api('PATCH', `/api/materials/${id}`, { remaining_g: 'lots' })).status, 400);
+});
+
 test('custom fields: create, reject duplicates, store values', async () => {
   const f = await t.api('POST', '/api/fields', { label: 'Bed surface', type: 'select', options: ['Textured PEI', 'Smooth PEI'] });
   assert.equal(f.data.key, 'bed_surface');

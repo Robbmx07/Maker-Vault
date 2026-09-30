@@ -338,7 +338,7 @@ export async function restore(zipBlob) {
   for (const f of (await getAll('files'))) forgetUrl(f.id);
   for (const s of STORES) await clearStore(s);
   for (const r of vault.projects) await putRec('projects', r);
-  for (const s of ['materials', 'runs', 'fields']) for (const r of vault[s] || []) await putRec(s, r);
+  for (const s of ['materials', 'runs', 'fields']) for (const r of vault[s] || []) await putRec(s, s === 'materials' ? priceInGrams(r) : r);
   for (const { zipPath, ...rec } of vault.files) {
     const bytes = await readZipEntryBlob(zipBlob, byName.get(zipPath));
     await putRec('files', { ...rec, blob: new Blob([bytes], { type: rec.kind === 'photo' ? 'image/png' : 'application/octet-stream' }) });
@@ -413,12 +413,37 @@ route('DELETE', '/api/files/:id', async ({ params }) => {
 });
 
 // Materials
+// Everything about a material is measured in grams: what is left (g) and what it costs (price per gram).
+// Empty clears the value; anything else must be a number of zero or more.
+const amount = (v, label) => {
+  if (v === '' || v === null) return null;
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < 0) throw bad(`${label} must be a number of zero or more`);
+  return n;
+};
 const materialFields = (b, cur = {}) => ({
   name: String(b.name ?? cur.name ?? '').trim(), type: String(b.type ?? cur.type ?? ''), brand: String(b.brand ?? cur.brand ?? ''),
   color: String(b.color ?? cur.color ?? ''), notes: String(b.notes ?? cur.notes ?? ''),
-  remaining_g: b.remaining_g === '' ? null : (b.remaining_g !== undefined ? Number(b.remaining_g) : (cur.remaining_g ?? null)),
-  cost_per_kg: b.cost_per_kg === '' ? null : (b.cost_per_kg !== undefined ? Number(b.cost_per_kg) : (cur.cost_per_kg ?? null)),
+  remaining_g: b.remaining_g === undefined ? (cur.remaining_g ?? null) : amount(b.remaining_g, 'remaining_g'),
+  cost_per_g: b.cost_per_g === undefined ? (cur.cost_per_g ?? null) : amount(b.cost_per_g, 'cost_per_g'),
 });
+
+// Older versions priced materials per kilogram. Convert (price per kg / 1000 = price per gram) so nothing is
+// lost or misread: applied to the saved library on first use, and to materials inside an old backup on restore.
+const round6 = (n) => Math.round(n * 1e6) / 1e6;
+function priceInGrams(rec) {
+  if (!('cost_per_kg' in rec)) return rec;
+  const { cost_per_kg: perKg, ...rest } = rec;
+  if (rest.cost_per_g === undefined || rest.cost_per_g === null) rest.cost_per_g = perKg == null || perKg === '' ? null : round6(Number(perKg) / 1000);
+  return rest;
+}
+let materialsMigrated;
+function migrateMaterialPricing() {
+  materialsMigrated ??= (async () => {
+    for (const m of await getAll('materials')) if ('cost_per_kg' in m) await putRec('materials', priceInGrams(m));
+  })();
+  return materialsMigrated;
+}
 route('GET', '/api/materials', async () => (await getAll('materials')).sort((a, b) => a.name.localeCompare(b.name)));
 route('POST', '/api/materials', async ({ body }) => {
   const m = materialFields(body || {});
@@ -507,6 +532,7 @@ route('GET', '/api/tags', async () => {
 });
 
 export async function api(method, url, body) {
+  await migrateMaterialPricing();
   const u = new URL(url, 'http://vault.local');
   for (const r of routes) {
     if (r.method !== method) continue;

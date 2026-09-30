@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS materials (
   brand TEXT NOT NULL DEFAULT '',
   color TEXT NOT NULL DEFAULT '',
   remaining_g REAL,
-  cost_per_kg REAL,
+  cost_per_g REAL,
   notes TEXT NOT NULL DEFAULT '',
   created_at INTEGER NOT NULL
 );
@@ -65,9 +65,24 @@ CREATE TABLE IF NOT EXISTS field_defs (
 );
 `;
 
+// Materials used to be priced per kilogram. Everything is in grams now, so convert existing data
+// (price per kg / 1000 = price per gram) the first time an older library is opened.
+function migrateMaterialPricing(db) {
+  const cols = db.prepare('PRAGMA table_info(materials)').all().map((c) => c.name);
+  if (!cols.includes('cost_per_kg')) return;
+  db.exec('BEGIN');
+  try {
+    if (!cols.includes('cost_per_g')) db.exec('ALTER TABLE materials ADD COLUMN cost_per_g REAL');
+    db.exec('UPDATE materials SET cost_per_g = ROUND(cost_per_kg / 1000.0, 6) WHERE cost_per_kg IS NOT NULL AND cost_per_g IS NULL');
+    db.exec('ALTER TABLE materials DROP COLUMN cost_per_kg');
+    db.exec('COMMIT');
+  } catch (e) { db.exec('ROLLBACK'); throw e; }
+}
+
 export function openDb(file) {
   const db = new DatabaseSync(file);
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
   db.exec(SCHEMA);
+  migrateMaterialPricing(db);
   return db;
 }

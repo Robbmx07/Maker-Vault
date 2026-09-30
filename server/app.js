@@ -348,21 +348,29 @@ export function createApp(db, { dataDir, config = {}, allowRemote = false }) {
   });
 
   // Materials
+  // Everything about a material is measured in grams: what is left (g) and what it costs (price per gram).
+  // Empty clears the value; anything else must be a number of zero or more.
+  const amount = (v, label) => {
+    if (v === '' || v === null) return null;
+    const n = Number(v);
+    if (!Number.isFinite(n) || n < 0) throw bad(`${label} must be a number of zero or more`);
+    return n;
+  };
   const materialFields = (b, cur = {}) => ({
     name: String(b.name ?? cur.name ?? '').trim(),
     type: String(b.type ?? cur.type ?? ''),
     brand: String(b.brand ?? cur.brand ?? ''),
     color: String(b.color ?? cur.color ?? ''),
-    remaining_g: b.remaining_g === '' ? null : (b.remaining_g ?? cur.remaining_g ?? null),
-    cost_per_kg: b.cost_per_kg === '' ? null : (b.cost_per_kg ?? cur.cost_per_kg ?? null),
+    remaining_g: b.remaining_g === undefined ? (cur.remaining_g ?? null) : amount(b.remaining_g, 'remaining_g'),
+    cost_per_g: b.cost_per_g === undefined ? (cur.cost_per_g ?? null) : amount(b.cost_per_g, 'cost_per_g'),
     notes: String(b.notes ?? cur.notes ?? ''),
   });
   route('GET', '/api/materials', () => db.prepare('SELECT * FROM materials ORDER BY name').all());
   route('POST', '/api/materials', async ({ body }) => {
     const m = materialFields(await body());
     if (!m.name) throw bad('name is required');
-    const r = db.prepare('INSERT INTO materials (name, type, brand, color, remaining_g, cost_per_kg, notes, created_at) VALUES (?,?,?,?,?,?,?,?)')
-      .run(m.name, m.type, m.brand, m.color, m.remaining_g, m.cost_per_kg, m.notes, now());
+    const r = db.prepare('INSERT INTO materials (name, type, brand, color, remaining_g, cost_per_g, notes, created_at) VALUES (?,?,?,?,?,?,?,?)')
+      .run(m.name, m.type, m.brand, m.color, m.remaining_g, m.cost_per_g, m.notes, now());
     return { id: Number(r.lastInsertRowid) };
   });
   route('PATCH', '/api/materials/:id', async ({ params, body }) => {
@@ -370,8 +378,8 @@ export function createApp(db, { dataDir, config = {}, allowRemote = false }) {
     if (!cur) throw notFound('Material not found');
     const m = materialFields(await body(), cur);
     if (!m.name) throw bad('name is required');
-    db.prepare('UPDATE materials SET name=?, type=?, brand=?, color=?, remaining_g=?, cost_per_kg=?, notes=? WHERE id=?')
-      .run(m.name, m.type, m.brand, m.color, m.remaining_g, m.cost_per_kg, m.notes, cur.id);
+    db.prepare('UPDATE materials SET name=?, type=?, brand=?, color=?, remaining_g=?, cost_per_g=?, notes=? WHERE id=?')
+      .run(m.name, m.type, m.brand, m.color, m.remaining_g, m.cost_per_g, m.notes, cur.id);
     return q.material.get(cur.id);
   });
   route('DELETE', '/api/materials/:id', ({ params }) => {
