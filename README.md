@@ -123,7 +123,7 @@ a GitHub Release when you push a tag like `v0.1.0`.
   - STL: bounding box in mm and triangle count
 - **Run log.** After each print or burn, log how it went. The recipe is snapshotted with the run, so when a print
   fails you can *compare any two runs* and see exactly which settings changed.
-- **Materials.** Track spools and sheets; grams used on a run are deducted from the remaining amount.
+- **Materials.** Track spools and sheets in grams or ounces (your choice, with a built-in unit converter); the amount used on a run is deducted from what remains.
 - **Custom fields.** Settings → add anything you care about (bed surface, wood species, vinyl brand, customer…),
   as text, number, checkbox or dropdown, for all machines or just one.
 - **Search** across names, notes, tags, file names and recipe values. Filter by machine and tag.

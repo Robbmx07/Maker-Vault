@@ -2,6 +2,7 @@
 // (never innerHTML) so file names and notes can never inject markup.
 
 import * as backend from './backend.js';
+import { getUnit, setUnit, showWeight, weightToGrams, showPrice, priceToPerGram, weightLabel, priceLabel, convertWeight, G_PER_OZ } from './units.js';
 
 const { api } = backend;
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -277,15 +278,15 @@ function runsSection(p, materials, getRecipe) {
   const picked = new Set();
   const diffBox = h('div', {});
   const machine = h('input', { type: 'text', placeholder: 'e.g. Prusa MK4, Ortur LM3', 'aria-label': 'Machine', value: p.recipe.printer || p.recipe.device || '' });
-  const material = h('select', { 'aria-label': 'Material' }, h('option', { value: '' }, 'Material (optional)'), materials.map((m) => h('option', { value: m.id }, `${m.name}${m.remaining_g != null ? ` — ${Math.round(m.remaining_g)} g left` : ''}`)));
+  const material = h('select', { 'aria-label': 'Material' }, h('option', { value: '' }, 'Material (optional)'), materials.map((m) => h('option', { value: m.id }, `${m.name}${m.remaining_g != null ? ` — ${weightLabel(m.remaining_g)} left` : ''}`)));
   const outcome = h('select', { 'aria-label': 'Outcome', style: { width: 'auto' } }, Object.entries(OUTCOME_LABEL).map(([v, l]) => h('option', { value: v }, l)));
-  const grams = h('input', { type: 'number', min: 0, step: 'any', placeholder: 'grams used', 'aria-label': 'Grams used', style: { width: '140px' } });
+  const grams = h('input', { type: 'number', min: 0, step: 'any', placeholder: `${getUnit() === 'oz' ? 'ounces' : 'grams'} used`, 'aria-label': 'Amount used', style: { width: '140px' } });
   const notes = h('input', { type: 'text', placeholder: 'What happened? What would you change?', 'aria-label': 'Run notes' });
   const form = h('div', { class: 'row', style: { marginBottom: '12px' } },
     h('div', { style: { flex: '1 1 160px' } }, machine), h('div', { style: { flex: '1 1 180px' } }, material), outcome, grams,
     h('div', { style: { flex: '2 1 240px' } }, notes),
     h('button', { class: 'primary', onclick: guard(async () => {
-      await api('POST', `/api/projects/${p.id}/runs`, { machine: machine.value, material_id: material.value || null, outcome: outcome.value, grams_used: grams.value, notes: notes.value, settings: getRecipe() });
+      await api('POST', `/api/projects/${p.id}/runs`, { machine: machine.value, material_id: material.value || null, outcome: outcome.value, grams_used: weightToGrams(grams.value), notes: notes.value, settings: getRecipe() });
       toast('Run logged with the current recipe'); route(true);
     }) }, 'Log run'));
 
@@ -305,7 +306,7 @@ function runsSection(p, materials, getRecipe) {
       h('input', { type: 'checkbox', 'aria-label': 'Select run to compare', style: { width: 'auto' }, onchange: (e) => { e.target.checked ? picked.add(r.id) : picked.delete(r.id); if (picked.size > 2) { picked.delete([...picked][0]); } compare.disabled = picked.size !== 2; compare.textContent = picked.size === 2 ? 'Compare selected' : `Compare (pick ${2 - picked.size} more)`; } }),
       h('span', { class: `badge ${r.outcome}` }, OUTCOME_LABEL[r.outcome]), h('span', { class: 'kv' }, fmtDate(r.created_at)),
       r.machine ? h('span', { class: 'chip' }, r.machine) : null, r.material_id && byId[r.material_id] ? h('span', { class: 'chip' }, byId[r.material_id].name) : null,
-      r.grams_used ? h('span', { class: 'kv' }, `${r.grams_used} g`) : null, h('div', { class: 'spacer' }),
+      r.grams_used ? h('span', { class: 'kv' }, weightLabel(r.grams_used)) : null, h('div', { class: 'spacer' }),
       h('button', { class: 'small', onclick: (e) => { const pre = e.target.closest('.run').querySelector('pre'); pre.hidden = !pre.hidden; } }, 'Settings'),
       h('button', { class: 'small danger', onclick: guard(async () => { if (confirm('Delete this run?')) { await api('DELETE', `/api/runs/${r.id}`); route(true); } }) }, '×')),
     r.notes ? h('div', {}, r.notes) : null,
@@ -323,21 +324,53 @@ function lightbox(src) {
 // ---------------------------------------------------------------- materials
 async function materialsView(app) {
   const materials = await api('GET', '/api/materials');
+  const u = getUnit();
   const f = {};
   const inp = (key, ph, type = 'text', w) => (f[key] = h('input', { type, placeholder: ph, 'aria-label': ph, step: 'any', min: type === 'number' ? 0 : undefined, style: w ? { width: w } : {} }));
   const add = guard(async () => {
-    await api('POST', '/api/materials', Object.fromEntries(Object.entries(f).map(([k, el]) => [k, el.value])));
+    const body = Object.fromEntries(Object.entries(f).map(([k, el]) => [k, el.value]));
+    body.remaining_g = weightToGrams(body.remaining_g); // typed in your unit, stored in grams
+    body.cost_per_g = priceToPerGram(body.cost_per_g);
+    await api('POST', '/api/materials', body);
     route();
   });
-  put(app, 
-    h('h1', {}, 'Materials'), h('p', { class: 'sub' }, 'Spools, sheets and vinyl. Everything is in grams: log grams on a run and the remaining amount updates itself.'),
-    h('section', { class: 'panel' }, h('div', { class: 'row' }, inp('name', 'Name (e.g. Blue PETG)'), inp('type', 'Type (PLA, birch ply…)'), inp('brand', 'Brand'), inp('color', 'Color'), inp('remaining_g', 'Remaining (g)', 'number', '150px'), inp('cost_per_g', 'Cost per gram ($/g)', 'number', '150px'), h('button', { class: 'primary', onclick: add }, 'Add')),
-      h('p', { class: 'kv', style: { margin: '8px 0 0' } }, 'Weight is in grams and price is per gram. For example, a 1 kg spool that cost $22 is 1000 g at $0.022 per gram.')),
-    materials.length ? h('section', { class: 'panel' }, h('table', {}, h('tr', {}, ['Name', 'Type', 'Brand', 'Color', 'Remaining (g)', 'Cost per gram', ''].map((t) => h('th', {}, t))),
+  const unitPick = h('select', { 'aria-label': 'Weight unit', style: { width: 'auto' }, onchange: (e) => { setUnit(e.target.value); route(); } },
+    h('option', { value: 'g', selected: u === 'g' }, 'Grams (g)'), h('option', { value: 'oz', selected: u === 'oz' }, 'Ounces (oz)'));
+  put(app,
+    h('h1', {}, 'Materials'),
+    h('p', { class: 'sub' }, `Spools, sheets and vinyl. Log ${u === 'oz' ? 'ounces' : 'grams'} on a run and the remaining amount updates itself.`),
+    h('section', { class: 'panel' }, h('div', { class: 'row' }, h('label', { class: 'kv' }, 'Show weights in'), unitPick),
+      h('p', { class: 'kv', style: { margin: '8px 0 0' } }, 'Switching only changes what you see and type. Your amounts are always kept in grams, so nothing is lost or rounded away when you switch back.')),
+    h('section', { class: 'panel' }, h('div', { class: 'row' }, inp('name', 'Name (e.g. Blue PETG)'), inp('type', 'Type (PLA, birch ply…)'), inp('brand', 'Brand'), inp('color', 'Color'), inp('remaining_g', `Remaining (${u})`, 'number', '150px'), inp('cost_per_g', `Cost per ${u === 'oz' ? 'ounce' : 'gram'} ($/${u})`, 'number', '150px'), h('button', { class: 'primary', onclick: add }, 'Add')),
+      h('p', { class: 'kv', style: { margin: '8px 0 0' } }, u === 'oz'
+        ? 'For example, a 1 kg spool that cost $22 is 35.27 oz at $0.6237 per ounce.'
+        : 'For example, a 1 kg spool that cost $22 is 1000 g at $0.022 per gram.')),
+    converterPanel(),
+    materials.length ? h('section', { class: 'panel' }, h('table', {}, h('tr', {}, ['Name', 'Type', 'Brand', 'Color', `Remaining (${u})`, `Cost per ${u === 'oz' ? 'ounce' : 'gram'}`, ''].map((t) => h('th', {}, t))),
       materials.map((m) => h('tr', {}, h('td', {}, m.name), h('td', {}, m.type), h('td', {}, m.brand), h('td', {}, m.color),
-        h('td', {}, h('input', { type: 'number', min: 0, step: 'any', value: m.remaining_g ?? '', style: { width: '110px' }, 'aria-label': `Remaining grams for ${m.name}`, onchange: guard(async (e) => { await api('PATCH', `/api/materials/${m.id}`, { remaining_g: e.target.value }); toast('Updated'); }) })),
-        h('td', {}, m.cost_per_g != null ? `$${Number(Number(m.cost_per_g).toFixed(5))}/g` : ''),
+        h('td', {}, h('input', { type: 'number', min: 0, step: 'any', value: showWeight(m.remaining_g), style: { width: '110px' }, 'aria-label': `Remaining ${u === 'oz' ? 'ounces' : 'grams'} for ${m.name}`, onchange: guard(async (e) => { await api('PATCH', `/api/materials/${m.id}`, { remaining_g: weightToGrams(e.target.value) }); toast('Updated'); }) })),
+        h('td', {}, priceLabel(m.cost_per_g)),
         h('td', {}, h('button', { class: 'small danger', onclick: guard(async () => { if (confirm(`Delete ${m.name}?`)) { await api('DELETE', `/api/materials/${m.id}`); route(); } }) }, '×')))))) : null);
+}
+
+// Spools are sold in grams, many machines report ounces (or the reverse): type a weight in any unit, see the rest.
+function converterPanel() {
+  const value = h('input', { type: 'number', min: 0, step: 'any', placeholder: 'Weight', 'aria-label': 'Weight to convert', style: { width: '140px' } });
+  const from = h('select', { 'aria-label': 'Convert from', style: { width: 'auto' } }, ['g', 'oz', 'kg', 'lb'].map((x) => h('option', { value: x }, x)));
+  const out = h('p', { class: 'kv', style: { margin: '8px 0 0' } });
+  const update = () => {
+    const c = convertWeight(value.value, from.value);
+    out.textContent = c ? `${c.g} g  =  ${c.oz} oz  =  ${c.kg} kg  =  ${c.lb} lb` : 'Enter a weight to see it in grams, ounces, kilograms and pounds.';
+  };
+  const price = h('input', { type: 'number', min: 0, step: 'any', placeholder: 'Price per gram', 'aria-label': 'Price per gram to convert', style: { width: '150px' } });
+  const priceOut = h('span', { class: 'kv' });
+  price.oninput = () => { priceOut.textContent = price.value === '' ? '' : `= $${showPrice(price.value, 'oz')} per ounce`; };
+  value.oninput = update; from.onchange = update; update();
+  return h('section', { class: 'panel' }, h('h2', {}, 'Unit converter'),
+    h('div', { class: 'row' }, value, from),
+    out,
+    h('div', { class: 'row', style: { marginTop: '10px' } }, price, priceOut),
+    h('p', { class: 'kv', style: { margin: '8px 0 0' } }, `1 oz = ${G_PER_OZ.toFixed(2)} g. Example: a 1 kg spool is 35.27 oz.`));
 }
 
 // ---------------------------------------------------------------- settings / custom fields
