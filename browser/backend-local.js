@@ -271,6 +271,12 @@ function saveBlob(blob, filename) {
 const text = (s) => new TextEncoder().encode(s);
 const iso = (t) => new Date(t).toISOString();
 
+export async function fileBytes(file) {
+  const rec = await getOne('files', file.id);
+  if (!rec) throw bad('File not found');
+  return (await originalBlob(rec)).arrayBuffer();
+}
+
 export async function downloadFile(file) {
   const rec = await getOne('files', file.id);
   if (!rec) throw bad('File not found');

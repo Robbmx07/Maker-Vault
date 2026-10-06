@@ -26,5 +26,11 @@ function saveFrom(href, filename) {
   a.remove();
 }
 
+// The original bytes of a stored file, for previews.
+export async function fileBytes(file) {
+  const res = await fetch(`/api/files/${file.id}/raw`);
+  if (!res.ok) throw new Error(`Could not load ${file.name} (${res.status})`);
+  return res.arrayBuffer();
+}
 export async function downloadFile(file) { saveFrom(`/api/files/${file.id}/raw?download=1`, file.name); }
 export async function exportProject(id) { saveFrom(`/api/projects/${id}/export`, ''); }

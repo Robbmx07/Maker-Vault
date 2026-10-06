@@ -2,6 +2,8 @@
 // (never innerHTML) so file names and notes can never inject markup.
 
 import * as backend from './backend.js';
+import { canView, loadMesh } from './mesh.js';
+import { createViewer } from './viewer.js';
 import { getUnit, setUnit, showWeight, weightToGrams, showPrice, priceToPerGram, weightLabel, priceLabel, convertWeight, G_PER_OZ } from './units.js';
 
 const { api } = backend;
@@ -217,6 +219,7 @@ async function projectView(app, id) {
     userFiles.length ? userFiles.map((f) => h('div', { class: 'file' },
       h('span', { class: 'chip kind' }, KIND_LABEL[f.kind]),
       h('div', { style: { flex: 1, minWidth: 0 } }, h('div', { class: 'name' }, f.name), h('div', { class: 'info' }, [f.stored_size != null && f.stored_size < f.size ? `${fmtBytes(f.size)} (stored as ${fmtBytes(f.stored_size)})` : fmtBytes(f.size), fileSummary(f)].filter(Boolean).join(' · '))),
+      canView(f.name) ? h('button', { class: 'small', onclick: () => viewModel(f) }, 'View 3D') : null,
       h('button', { class: 'small', onclick: guard(() => backend.downloadFile(f)) }, 'Download'),
       h('button', { class: 'small danger', onclick: guard(async () => { if (confirm(`Remove ${f.name} from the vault?`)) { await api('DELETE', `/api/files/${f.id}`); route(true); } }) }, 'Remove'))) : h('p', { class: 'kv' }, 'No files yet.'),
     h('div', { style: { marginTop: '12px' } }, zone),
@@ -319,6 +322,37 @@ function runsSection(p, materials, getRecipe) {
 function lightbox(src) {
   const box = h('div', { class: 'lightbox', onclick: () => box.remove() }, h('img', { src, alt: '' }));
   document.body.append(box);
+}
+
+// 3D preview of a model file (STL, OBJ, 3MF) in a pop-up.
+function viewModel(f) {
+  let viewer;
+  const info = h('span', { class: 'kv' }, 'Loading…');
+  const canvas = h('canvas', { class: 'viewer-canvas', 'aria-label': `3D view of ${f.name}` });
+  const msg = h('div', { class: 'viewer-msg' });
+  const close = () => { viewer?.destroy(); document.removeEventListener('keydown', onKey); box.remove(); };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  const views = ['Reset', 'Top', 'Front', 'Side'].map((v) => h('button', { class: 'small', disabled: true, onclick: () => viewer?.setView(v.toLowerCase()) }, v));
+  const box = h('div', { class: 'viewer-backdrop', onclick: (e) => { if (e.target === box) close(); } },
+    h('div', { class: 'viewer', role: 'dialog', 'aria-label': `3D preview of ${f.name}` },
+      h('div', { class: 'viewer-bar' }, h('strong', { class: 'viewer-title' }, f.name), info, h('div', { class: 'spacer' }), views, h('button', { class: 'small', onclick: close }, 'Close')),
+      h('div', { class: 'viewer-stage' }, canvas, msg),
+      h('p', { class: 'kv viewer-hint' }, 'Drag to turn · scroll or pinch to zoom · right-drag or two fingers to move · Esc to close')));
+  document.body.append(box);
+  document.addEventListener('keydown', onKey);
+  (async () => {
+    try {
+      const mesh = await loadMesh(f.name, await backend.fileBytes(f));
+      viewer = createViewer(canvas, mesh.positions);
+      const [x, y, z] = viewer.size.map((n) => Math.round(n * 100) / 100);
+      info.textContent = `${x} × ${y} × ${z} (model units, usually mm) · ${viewer.triangles.toLocaleString()} triangles`;
+      views.forEach((b) => (b.disabled = false));
+    } catch (err) {
+      info.textContent = '';
+      msg.textContent = err.message || String(err);
+      msg.classList.add('show');
+    }
+  })();
 }
 
 // ---------------------------------------------------------------- materials

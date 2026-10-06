@@ -113,6 +113,10 @@ a GitHub Release when you push a tag like `v0.1.0`.
 - **Drag & drop anything.** `Bracket.stl`, `Bracket_0.2mm_PETG_MK4_1h.gcode` and `Bracket.3mf` are grouped into one
   project automatically. Or import a whole folder of existing files — safe to re-run, nothing is duplicated, your
   originals are never touched.
+- **3D preview.** Click **View 3D** on an STL, OBJ or 3MF file to turn it around, zoom and see its size, right in the
+  app and offline (no libraries, no upload). Tested in Chromium on STL; OBJ and 3MF (including multi-part files) are
+  covered by automated tests on simple files, so a complex 3MF from a slicer may not show correctly. There is no
+  G-code toolpath viewer yet.
 - **Settings are read for you** into a *recipe* (best tested with PrusaSlicer; the others are newer):
   - G-code: layer height, temperatures, infill, filament, print time, weight. **Tested on real PrusaSlicer files.**
     OrcaSlicer, Bambu Studio and Cura headers are also recognised but have not been tested on real files.
