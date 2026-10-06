@@ -4,9 +4,9 @@
 export const G_PER_OZ = 28.349523125;
 export const G_PER_LB = 453.59237;
 
-const KEY = 'jigbook-unit';
+const KEY = 'cubbybench-unit';
 let unit = 'g';
-try { if ((localStorage.getItem(KEY) ?? localStorage.getItem('maker-vault-unit')) === 'oz') unit = 'oz'; } catch { /* storage blocked: default to grams */ }
+try { if ((localStorage.getItem(KEY) ?? localStorage.getItem('jigbook-unit') ?? localStorage.getItem('maker-vault-unit')) === 'oz') unit = 'oz'; } catch { /* storage blocked: default to grams */ }
 
 export const getUnit = () => unit;
 export function setUnit(u) {

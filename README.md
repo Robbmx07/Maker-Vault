@@ -1,13 +1,13 @@
-# Jigbook
+# CubbyBench
 
-_Formerly called Maker Vault. Libraries and backups made under the old name still open and restore._
+_Formerly called Maker Vault and Jigbook. Libraries and backups made under the old name still open and restore._
 
 A free, local-first project vault for 3D printing, laser engraving and vinyl cutting.
 
-**➡ Download and try it: https://robbmx07.github.io/Jigbook/** · [Quick-start guide (PDF)](docs/tutorial.pdf)
+**➡ Download and try it: https://robbmx07.github.io/CubbyBench/** · [Quick-start guide (PDF)](docs/tutorial.pdf)
 
 Makers lose track of *how* something was made: the STL is in Downloads, the G-code is on an SD card, the laser
-power and speed lived on a sticky note, and last month's perfect print can't be repeated. Jigbook keeps every
+power and speed lived on a sticky note, and last month's perfect print can't be repeated. CubbyBench keeps every
 project together — **source files, machine-ready files, the settings that worked, photos, and a log of results** —
 and reads settings out of your files so you barely have to type anything.
 
@@ -19,7 +19,7 @@ There are three editions. They share the same interface and the same file reader
 
 ### 1. One HTML file (simplest)
 
-Download **[`jigbook.html`](jigbook.html)**, save it somewhere permanent, and open it in Chrome or Edge (Firefox and
+Download **[`cubbybench.html`](cubbybench.html)**, save it somewhere permanent, and open it in Chrome or Edge (Firefox and
 Safari should also work but are less tested). That's it: no server, no install, no internet connection needed. The whole app is that single ~57 KB file.
 
 Because there is no server, your vault is kept **inside your browser** (IndexedDB) on this computer. Nothing is
@@ -38,7 +38,7 @@ uploaded anywhere. What that means in practice:
   a lot (in tests on real open-source files: G-code about 76%, STL 65–89%, SVG about 75% smaller). 3MF and photos are
   already compressed and are stored as they are, so how much you save depends on what you keep. Every compressed copy
   is verified when it is stored, and downloads and *Export package* always return the original file, byte for byte.
-  *Backups* keep the compressed form (smaller, and meant to be restored into Jigbook).
+  *Backups* keep the compressed form (smaller, and meant to be restored into CubbyBench).
 
 To rebuild it from source: `npm install && npm run build:html`.
 
@@ -47,7 +47,7 @@ A step-by-step [quick-start guide (PDF)](docs/tutorial.pdf) is included.
 #### Publishing the download page (GitHub Pages)
 
 The [`docs/`](docs/) folder is a ready-to-host website: a landing page (`index.html`) whose **Download** button gives
-people the app (`jigbook.html`), plus the tutorial PDF. To put it online:
+people the app (`cubbybench.html`), plus the tutorial PDF. To put it online:
 
 1. On GitHub open **Settings → Pages**.
 2. Under **Build and deployment**, set **Source** to **Deploy from a branch**, choose branch **main** and folder **/docs**, and click **Save**.
@@ -55,7 +55,7 @@ people the app (`jigbook.html`), plus the tutorial PDF. To put it online:
 
 Because the site serves the very same file, people can use the app straight from the page or download it (the two
 copies are separate vaults; backup and restore moves data between them). After changing the app, run
-`npm run build:html` so both copies (`jigbook.html` and `docs/jigbook.html`) stay in sync; the tests check this.
+`npm run build:html` so both copies (`cubbybench.html` and `docs/cubbybench.html`) stay in sync; the tests check this.
 
 ### 2. Standalone desktop app (not published yet)
 
@@ -63,16 +63,16 @@ Ready-made downloads for this edition are **not available yet**, so there is not
 build one yourself (see “Building the standalone app yourself” below; only the Linux build has been tested) or just
 use the single HTML file above.
 
-With a built file, double-click **jigbook**. Your browser opens with your vault. Keep the small window that
+With a built file, double-click **cubbybench**. Your browser opens with your vault. Keep the small window that
 appears open while you use it; close it to quit.
 
 Your library is stored in a normal per-user folder, and you can back it up by copying that folder:
 
 | System  | Location                                        |
 | ------- | ----------------------------------------------- |
-| Windows | `%APPDATA%\Jigbook`                          |
-| macOS   | `~/Library/Application Support/Jigbook`      |
-| Linux   | `~/.local/share/jigbook`                    |
+| Windows | `%APPDATA%\CubbyBench`                          |
+| macOS   | `~/Library/Application Support/CubbyBench`      |
+| Linux   | `~/.local/share/cubbybench`                    |
 
 **Portable mode:** create a folder named `data` next to the program and it will keep everything there instead —
 handy for running from a USB stick.
@@ -81,7 +81,7 @@ handy for running from a USB stick.
 
 - *Windows SmartScreen:* click **More info → Run anyway**.
 - *macOS:* right-click the app → **Open** → **Open**. If macOS still refuses, run
-  `xattr -d com.apple.quarantine jigbook-macos-arm64` in Terminal once.
+  `xattr -d com.apple.quarantine cubbybench-macos-arm64` in Terminal once.
 
 ### 3. From source (server edition)
 
@@ -94,14 +94,14 @@ npm start
 
 Environment variables: `VAULT_DATA` (library folder), `PORT` (default 4747), `VAULT_NO_OPEN=1` (don't open a browser).
 
-If Jigbook is already running, starting it again just opens the running copy, so two programs never write to
+If CubbyBench is already running, starting it again just opens the running copy, so two programs never write to
 the same library.
 
 ### Building the standalone app yourself
 
 ```bash
 npm install          # dev tools only (esbuild, postject); the app itself has no dependencies
-npm run build:sea    # → dist/jigbook-<os>-<arch>
+npm run build:sea    # → dist/cubbybench-<os>-<arch>
 ```
 
 The result is a single ~120 MB file containing the Node runtime, the server and the UI. It can only be built for
@@ -136,9 +136,9 @@ Cricut Design Space can't be read directly: it keeps projects in Cricut's cloud.
 
 ## Branding (optional)
 
-To show a "free from …" credit and link in the footer, copy `jigbook.config.example.json` to
-`jigbook.config.json` and edit it. When you build the standalone app, that file is **baked into the
-executable**, so every download carries your branding. A `jigbook.config.json` placed next to the program
+To show a "free from …" credit and link in the footer, copy `cubbybench.config.example.json` to
+`cubbybench.config.json` and edit it. When you build the standalone app, that file is **baked into the
+executable**, so every download carries your branding. A `cubbybench.config.json` placed next to the program
 overrides it.
 
 ## Security notes

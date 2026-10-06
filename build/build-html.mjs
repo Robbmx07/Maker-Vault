@@ -1,4 +1,4 @@
-// Builds jigbook.html: the whole app in ONE file. Open it in a browser and it works —
+// Builds cubbybench.html: the whole app in ONE file. Open it in a browser and it works —
 // no server, no install. Data is kept in the browser's IndexedDB.
 //   npm run build:html
 import fs from 'node:fs';
@@ -29,21 +29,21 @@ export async function buildHtml() {
   const js = result.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
   const css = fs.readFileSync(at('public', 'style.css'), 'utf8');
   let config = {};
-  try { config = JSON.parse(fs.readFileSync(at('jigbook.config.json'), 'utf8')); } catch { /* optional */ }
+  try { config = JSON.parse(fs.readFileSync(at('cubbybench.config.json'), 'utf8')); } catch { /* optional */ }
 
   let html = fs.readFileSync(at('public', 'index.html'), 'utf8');
   const swap = (from, to) => { if (!html.includes(from)) throw new Error(`index.html changed: could not find ${from}`); html = html.replace(from, () => to); };
   swap('<link rel="stylesheet" href="style.css">', `<style>\n${css}</style>`);
   swap('<script type="module" src="app.js"></script>',
-    `<script>window.JIGBOOK_CONFIG = ${JSON.stringify(config).replace(/</g, '\\u003c')};</script>\n<script>${js}</script>`);
+    `<script>window.CUBBYBENCH_CONFIG = ${JSON.stringify(config).replace(/</g, '\\u003c')};</script>\n<script>${js}</script>`);
   return html;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const html = await buildHtml();
-  fs.writeFileSync(at('jigbook.html'), html);
+  fs.writeFileSync(at('cubbybench.html'), html);
   // docs/ is what GitHub Pages serves: the landing page's Download button points at this copy.
   fs.mkdirSync(at('docs'), { recursive: true });
-  fs.writeFileSync(at('docs', 'jigbook.html'), html);
-  console.log(`Built jigbook.html and docs/jigbook.html (${(Buffer.byteLength(html) / 1024).toFixed(0)} KB)`);
+  fs.writeFileSync(at('docs', 'cubbybench.html'), html);
+  console.log(`Built cubbybench.html and docs/cubbybench.html (${(Buffer.byteLength(html) / 1024).toFixed(0)} KB)`);
 }

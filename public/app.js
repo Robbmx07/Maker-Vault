@@ -1,4 +1,4 @@
-// Jigbook UI. Vanilla JS, no build step. All text goes through textContent
+// CubbyBench UI. Vanilla JS, no build step. All text goes through textContent
 // (never innerHTML) so file names and notes can never inject markup.
 
 import * as backend from './backend.js';
@@ -446,10 +446,10 @@ async function route(keepFocus) {
 function brandFooter() {
   const b = state.config.brand;
   const foot = $('#footer');
-  if (!b?.name) { foot.textContent = 'Jigbook — free and open source. Your files never leave your computer.'; return; }
+  if (!b?.name) { foot.textContent = 'CubbyBench — free and open source. Your files never leave your computer.'; return; }
   const url = b.url && safeHttp(b.url);
   put(foot, 
-    'Jigbook is free, forever, from ', url ? h('a', { href: url, target: '_blank', rel: 'noopener noreferrer' }, b.name) : b.name,
+    'CubbyBench is free, forever, from ', url ? h('a', { href: url, target: '_blank', rel: 'noopener noreferrer' }, b.name) : b.name,
     b.tagline ? ` — ${b.tagline}` : '', b.cta && url ? [' · ', h('a', { href: url, target: '_blank', rel: 'noopener noreferrer' }, b.cta)] : null);
 }
 

@@ -23,17 +23,20 @@ function resolveDataDir() {
   const portable = path.join(exeDir, 'data');
   if (fs.existsSync(portable)) return portable;
   const home = os.homedir();
-  const [base, name, oldName] = process.platform === 'win32' ? [process.env.APPDATA || path.join(home, 'AppData', 'Roaming'), 'Jigbook', 'MakerVault']
-    : process.platform === 'darwin' ? [path.join(home, 'Library', 'Application Support'), 'Jigbook', 'MakerVault']
-    : [process.env.XDG_DATA_HOME || path.join(home, '.local', 'share'), 'jigbook', 'maker-vault'];
-  // Keep using the library saved under the product's previous name, if there is one.
-  if (!fs.existsSync(path.join(base, name)) && fs.existsSync(path.join(base, oldName))) return path.join(base, oldName);
+  const [base, name, oldNames] = process.platform === 'win32' ? [process.env.APPDATA || path.join(home, 'AppData', 'Roaming'), 'CubbyBench', ['Jigbook', 'MakerVault']]
+    : process.platform === 'darwin' ? [path.join(home, 'Library', 'Application Support'), 'CubbyBench', ['Jigbook', 'MakerVault']]
+    : [process.env.XDG_DATA_HOME || path.join(home, '.local', 'share'), 'cubbybench', ['jigbook', 'maker-vault']];
+  // Keep using the library saved under the product's earlier names, if there is one.
+  if (!fs.existsSync(path.join(base, name))) {
+    const old = oldNames.find((n) => fs.existsSync(path.join(base, n)));
+    if (old) return path.join(base, old);
+  }
   return path.join(base, name);
 }
 
 // Branding: a config file next to the program wins; otherwise the one baked in at build time.
 function loadConfig() {
-  const names = ['jigbook.config.json', 'maker-vault.config.json']; // the old name still works
+  const names = ['cubbybench.config.json', 'jigbook.config.json', 'maker-vault.config.json']; // earlier names still work
   for (const file of names.flatMap((name) => [path.join(isStandalone ? exeDir : devRoot, name), path.join(process.cwd(), name)])) {
     try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { /* try next */ }
   }
@@ -52,7 +55,7 @@ function openBrowser(url) {
   } catch { /* ignore */ }
 }
 
-// Is whatever answers on this port another Jigbook?
+// Is whatever answers on this port another CubbyBench?
 function isVault(port) {
   return new Promise((resolve) => {
     const req = http.get({ host: '127.0.0.1', port, path: '/api/config', timeout: 1500 }, (res) => {
@@ -84,7 +87,7 @@ async function main() {
     try {
       await tryListen(server, port);
       const url = `http://${localOnly ? '127.0.0.1' : 'localhost'}:${port}`;
-      console.log(`\n  Jigbook is running at ${url}`);
+      console.log(`\n  CubbyBench is running at ${url}`);
       console.log(`  Your library is stored in: ${dataDir}`);
       console.log('  Keep this window open while you use it. Close it (or press Ctrl+C) to quit.\n');
       openBrowser(url);
@@ -93,7 +96,7 @@ async function main() {
       if (e.code !== 'EADDRINUSE') throw e;
       // Same library, so never run a second copy: just open the one that is already up.
       if (await isVault(port)) {
-        console.log(`\n  Jigbook is already running at http://127.0.0.1:${port} — opening it.\n`);
+        console.log(`\n  CubbyBench is already running at http://127.0.0.1:${port} — opening it.\n`);
         openBrowser(`http://127.0.0.1:${port}`);
         db.close();
         return;
@@ -104,7 +107,7 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.error(`\n  Jigbook could not start: ${e.message}\n`);
+  console.error(`\n  CubbyBench could not start: ${e.message}\n`);
   if (process.platform === 'win32' && isStandalone) setTimeout(() => process.exit(1), 15000); // keep the message readable
   else process.exit(1);
 });

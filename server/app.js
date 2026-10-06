@@ -243,7 +243,7 @@ export function createApp(db, { dataDir, config = {}, allowRemote = false }) {
       entries.push({ name: `files/${n}`, data: fs.readFileSync(f.path) });
     }
     const manifest = {
-      exported_by: 'Jigbook', exported_at: new Date().toISOString(),
+      exported_by: 'CubbyBench', exported_at: new Date().toISOString(),
       project: { name: p.name, machine_type: p.machine_type, notes: p.notes, source_url: p.source_url, license: p.license, tags: p.tags },
       recipe: p.recipe, custom: p.custom,
       files: files.map((f) => ({ name: f.name, kind: f.kind, sha256: f.sha256, meta: json(f.meta) })),
@@ -254,7 +254,7 @@ export function createApp(db, { dataDir, config = {}, allowRemote = false }) {
       p.source_url ? `Source: ${p.source_url}` : '', p.license ? `License: ${p.license}` : '', '',
       '## Recipe', '', ...Object.entries(p.recipe).map(([k, v]) => `- **${k}**: ${v}`), '',
       '## Run history', '', ...runs.map((r) => `- ${new Date(r.created_at).toISOString().slice(0, 10)} — ${r.outcome}${r.notes ? ': ' + r.notes : ''}`),
-      '', '_Exported from Jigbook._', '',
+      '', '_Exported from CubbyBench._', '',
     ].filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n');
     entries.push({ name: 'recipe.json', data: Buffer.from(JSON.stringify(manifest, null, 2)) });
     entries.push({ name: 'README.md', data: Buffer.from(readme) });
