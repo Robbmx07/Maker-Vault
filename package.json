@@ -1,11 +1,11 @@
 {
-  "name": "maker-vault",
+  "name": "jigbook",
   "version": "0.1.0",
   "description": "Local-first project vault for 3D printing, laser engraving and vinyl cutting: keep files, settings and results together so every project is reproducible.",
   "type": "module",
   "license": "MIT",
   "author": "Bert's CNC Woodworking",
-  "homepage": "https://robbmx07.github.io/Maker-Vault/",
+  "homepage": "https://robbmx07.github.io/Jigbook/",
   "engines": {
     "node": ">=22.13"
   },

@@ -34,23 +34,23 @@ jobs:
       - name: Smoke test the built app
         shell: bash
         run: |
-          exe=$(ls dist/maker-vault-*)
+          exe=$(ls dist/jigbook-*)
           VAULT_NO_OPEN=1 VAULT_DATA="$RUNNER_TEMP/vault-smoke" PORT=4999 "$exe" &
           pid=$!
           for i in $(seq 1 20); do curl -fs http://127.0.0.1:4999/api/config && break; sleep 1; done
-          curl -fs http://127.0.0.1:4999/ | grep -q "Maker Vault"
+          curl -fs http://127.0.0.1:4999/ | grep -q "Jigbook"
           kill $pid || true
       - name: Package (unix)
         if: runner.os != 'Windows'
-        run: tar -czf "maker-vault-${{ matrix.name }}.tar.gz" -C dist .
+        run: tar -czf "jigbook-${{ matrix.name }}.tar.gz" -C dist .
       - name: Package (windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: Compress-Archive -Path dist\* -DestinationPath "maker-vault-${{ matrix.name }}.zip"
+        run: Compress-Archive -Path dist\* -DestinationPath "jigbook-${{ matrix.name }}.zip"
       - uses: actions/upload-artifact@v4
         with:
-          name: maker-vault-${{ matrix.name }}
-          path: maker-vault-${{ matrix.name }}.*
+          name: jigbook-${{ matrix.name }}
+          path: jigbook-${{ matrix.name }}.*
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')

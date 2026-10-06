@@ -1,4 +1,4 @@
-// Server backend: the UI talks to the local Maker Vault server over HTTP.
+// Server backend: the UI talks to the local Jigbook server over HTTP.
 // (The single-file HTML build swaps this module for one that stores everything in the browser.)
 export const local = false;
 

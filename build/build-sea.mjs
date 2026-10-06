@@ -1,5 +1,5 @@
 // Builds a single-file executable for the platform this script runs on.
-//   npm run build:sea   ->  dist/maker-vault-<platform>-<arch>[.exe]
+//   npm run build:sea   ->  dist/jigbook-<platform>-<arch>[.exe]
 // Cross-compiling is not possible (the executable embeds this machine's Node binary),
 // so the release workflow runs this once per operating system.
 import fs from 'node:fs';
@@ -31,8 +31,8 @@ await build({
 // 2. Embed the UI (and the optional branding config) as assets.
 const assets = {};
 for (const f of fs.readdirSync(path.join(root, 'public'))) assets[f] = path.join('public', f);
-const brand = path.join(root, 'maker-vault.config.json');
-if (fs.existsSync(brand)) { assets['maker-vault.config.json'] = 'maker-vault.config.json'; console.log('Embedding branding from maker-vault.config.json'); }
+const brand = path.join(root, 'jigbook.config.json');
+if (fs.existsSync(brand)) { assets['jigbook.config.json'] = 'jigbook.config.json'; console.log('Embedding branding from jigbook.config.json'); }
 const blob = path.join(dist, 'sea-prep.blob');
 const seaConfig = path.join(dist, 'sea-config.json');
 fs.writeFileSync(seaConfig, JSON.stringify({
@@ -42,7 +42,7 @@ execFileSync(process.execPath, ['--experimental-sea-config', path.relative(root,
 
 // 3. Copy this platform's node binary and inject the blob into it.
 const win = process.platform === 'win32';
-const out = path.join(dist, `maker-vault-${process.platform === 'win32' ? 'windows' : process.platform === 'darwin' ? 'macos' : 'linux'}-${process.arch}${win ? '.exe' : ''}`);
+const out = path.join(dist, `jigbook-${process.platform === 'win32' ? 'windows' : process.platform === 'darwin' ? 'macos' : 'linux'}-${process.arch}${win ? '.exe' : ''}`);
 fs.copyFileSync(process.execPath, out);
 fs.chmodSync(out, 0o755);
 if (process.platform === 'darwin') execFileSync('codesign', ['--remove-signature', out], { stdio: 'inherit' });

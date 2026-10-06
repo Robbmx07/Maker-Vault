@@ -5,19 +5,19 @@ import { buildHtml } from '../build/build-html.mjs';
 
 const html = await buildHtml();
 
-test('committed maker-vault.html matches the sources (run `npm run build:html`)', () => {
-  assert.equal(fs.readFileSync(new URL('../maker-vault.html', import.meta.url), 'utf8'), html);
+test('committed jigbook.html matches the sources (run `npm run build:html`)', () => {
+  assert.equal(fs.readFileSync(new URL('../jigbook.html', import.meta.url), 'utf8'), html);
 });
 
-test('the copy the website serves (docs/maker-vault.html) is identical', () => {
-  assert.equal(fs.readFileSync(new URL('../docs/maker-vault.html', import.meta.url), 'utf8'), html);
+test('the copy the website serves (docs/jigbook.html) is identical', () => {
+  assert.equal(fs.readFileSync(new URL('../docs/jigbook.html', import.meta.url), 'utf8'), html);
 });
 
 test('the landing page download button points at files that exist', () => {
   const page = fs.readFileSync(new URL('../docs/index.html', import.meta.url), 'utf8');
   const visible = page.replace(/<!--[\s\S]*?-->/g, '');
   const targets = [...visible.matchAll(/href="([^"#]+)"/g)].map((m) => m[1]).filter((h) => !/^(https?:|data:|mailto:)/.test(h));
-  assert.ok(targets.includes('maker-vault.html') && targets.includes('tutorial.pdf'));
+  assert.ok(targets.includes('jigbook.html') && targets.includes('tutorial.pdf'));
   for (const t of new Set(targets)) assert.ok(fs.existsSync(new URL(`../docs/${t}`, import.meta.url)), `docs/${t} is missing`);
   assert.doesNotMatch(visible, /<mark/, 'no unfilled placeholders are visible on the public page');
 });

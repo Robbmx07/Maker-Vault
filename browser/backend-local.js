@@ -26,6 +26,7 @@ let dbPromise;
 function openDb() {
   dbPromise ??= new Promise((resolve, reject) => {
     if (!window.indexedDB) return reject(bad('This browser does not allow local storage for this page. Try Chrome, Edge or Firefox.'));
+    // The database keeps its original name on purpose: renaming it would hide libraries saved before the product was renamed.
     const req = indexedDB.open('maker-vault', 1);
     req.onupgradeneeded = () => {
       const db = req.result;
@@ -290,7 +291,7 @@ export async function exportProject(id) {
     entries.push({ name: `files/${n}`, data: await originalBlob(f) });
   }
   const manifest = {
-    exported_by: 'Maker Vault', exported_at: new Date().toISOString(),
+    exported_by: 'Jigbook', exported_at: new Date().toISOString(),
     project: { name: p.name, machine_type: p.machine_type, notes: p.notes, source_url: p.source_url, license: p.license, tags: p.tags },
     recipe: p.recipe, custom: p.custom,
     files: files.map((f) => ({ name: f.name, kind: f.kind, sha256: f.sha256, meta: f.meta })),
@@ -301,7 +302,7 @@ export async function exportProject(id) {
     p.source_url ? `Source: ${p.source_url}` : '', p.license ? `License: ${p.license}` : '', '',
     '## Recipe', '', ...Object.entries(p.recipe).map(([k, v]) => `- **${k}**: ${v}`), '',
     '## Run history', '', ...runs.map((r) => `- ${iso(r.created_at).slice(0, 10)} — ${r.outcome}${r.notes ? ': ' + r.notes : ''}`),
-    '', '_Exported from Maker Vault._', '',
+    '', '_Exported from Jigbook._', '',
   ].filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n');
   entries.push({ name: 'recipe.json', data: text(JSON.stringify(manifest, null, 2)) }, { name: 'README.md', data: text(readme) });
   saveBlob(await buildZipBlob(entries), `${safeName(p.name)}.vault.zip`);
@@ -317,19 +318,19 @@ export async function backup() {
     entries.push({ name: zipPath, data: blob });
     return { ...rest, zipPath };
   });
-  const vault = { app: 'maker-vault', version: 1, exported_at: new Date().toISOString(), projects, files: meta, materials, runs, fields };
+  const vault = { app: 'jigbook', version: 1, exported_at: new Date().toISOString(), projects, files: meta, materials, runs, fields };
   entries.unshift({ name: 'vault.json', data: text(JSON.stringify(vault)) });
-  saveBlob(await buildZipBlob(entries), `maker-vault-backup-${new Date().toISOString().slice(0, 10)}.zip`);
+  saveBlob(await buildZipBlob(entries), `jigbook-backup-${new Date().toISOString().slice(0, 10)}.zip`);
 }
 
 export async function restore(zipBlob) {
   let entries;
-  try { entries = await listZipBlob(zipBlob); } catch { throw bad('That file is not a Maker Vault backup (not a zip file).'); }
+  try { entries = await listZipBlob(zipBlob); } catch { throw bad('That file is not a Jigbook backup (not a zip file).'); }
   const jsonEntry = entries.find((e) => e.name === 'vault.json');
-  if (!jsonEntry) throw bad('That zip is not a Maker Vault backup (vault.json is missing).');
+  if (!jsonEntry) throw bad('That zip is not a Jigbook backup (vault.json is missing).');
   let vault;
   try { vault = JSON.parse(utf8.decode(await readZipEntryBlob(zipBlob, jsonEntry))); } catch { throw bad('The backup’s vault.json is damaged.'); }
-  if (vault.app !== 'maker-vault' || vault.version !== 1) throw bad('This backup was made by an incompatible version.');
+  if (!['jigbook', 'maker-vault'].includes(vault.app) || vault.version !== 1) throw bad('This backup was made by an incompatible version.');
   const byName = new Map(entries.map((e) => [e.name, e]));
   // Verify everything is present before touching current data.
   const missing = vault.files.filter((f) => !byName.has(f.zipPath));
@@ -355,7 +356,7 @@ export async function storageInfo() {
 const routes = [];
 const route = (method, pattern, fn) => routes.push({ method, re: new RegExp(`^${pattern.replace(/:(\w+)/g, '(?<$1>[^/]+)')}$`), fn });
 
-route('GET', '/api/config', async () => ({ brand: window.MAKER_VAULT_CONFIG?.brand || null, machines: MACHINES, version: '0.1.0', local: true }));
+route('GET', '/api/config', async () => ({ brand: window.JIGBOOK_CONFIG?.brand || null, machines: MACHINES, version: '0.1.0', local: true }));
 route('GET', '/api/projects', ({ query }) => listProjects(query));
 route('POST', '/api/projects', async ({ body }) => ({ id: await createProject(body || {}) }));
 route('GET', '/api/projects/:id', async ({ params }) => {
